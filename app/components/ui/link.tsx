@@ -6,8 +6,14 @@ export default function Link({ to, children }: { to: string; children: React.Rea
     <ChakraLink
       asChild
       color="color"
+      focusRing="none"
     >
-      <NavLink to={to}>{children}</NavLink>
+      <NavLink
+        to={to}
+        className={({ isActive }) => (isActive ? 'font-bold' : 'font-normal')}
+      >
+        {children}
+      </NavLink>
     </ChakraLink>
   );
 }
