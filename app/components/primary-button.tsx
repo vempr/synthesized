@@ -1,12 +1,15 @@
 import { Button } from './ui/button';
+import type { ComponentProps } from 'react';
 
-export default function PrimaryButton({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) {
+type ButtonProps = ComponentProps<typeof Button>;
+
+export default function PrimaryButton({ children, ...props }: ButtonProps & { children: React.ReactNode }) {
   return (
     <Button
-      asChild={asChild}
       variant="solid"
       colorPalette="red"
       size="sm"
+      {...props}
     >
       {children}
     </Button>

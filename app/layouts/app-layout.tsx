@@ -113,7 +113,7 @@ export default function AppLayout() {
 
       <Hr />
 
-      <main>
+      <main className="p-7">
         <Outlet />
       </main>
     </div>
