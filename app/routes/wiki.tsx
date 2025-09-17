@@ -1,5 +1,5 @@
 import { Em, Heading, Text, List, VStack, Image, Card, Wrap, Flex } from '@chakra-ui/react';
-import type { Route } from './+types/home';
+import type { Route } from './+types/wiki';
 import PrimaryButton from '~/components/primary-button';
 import { NavLink } from 'react-router';
 

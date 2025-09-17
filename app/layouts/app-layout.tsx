@@ -40,16 +40,16 @@ export default function AppLayout() {
             align="center"
             justify="space-between"
           >
-            <Flex gap="5">
+            <Flex gap="7">
               <Link to="/">Home</Link>
               <Link to="/wiki">Composition Wiki</Link>
-              <Link to="/lb">Logbook</Link>
+              <Link to="/wiki">Your Account</Link>
             </Flex>
 
             <Flex gap="2">
               <ColorModeButton />
               <PrimaryButton asChild>
-                <NavLink to="/login">Login</NavLink>
+                <NavLink to="/logbook">Personal Logbook</NavLink>
               </PrimaryButton>
             </Flex>
           </Flex>
@@ -94,6 +94,7 @@ export default function AppLayout() {
                         <Link to="/">Home</Link>
                         <Link to="/wiki">Composition Wiki</Link>
                         <Link to="/lb">Logbook</Link>
+                        <Link to="/account">Your Account</Link>
                       </Flex>
                     </Drawer.Body>
                   </Drawer.Content>
@@ -104,7 +105,7 @@ export default function AppLayout() {
             <Flex gap="2">
               <ColorModeButton />
               <PrimaryButton asChild>
-                <NavLink to="/login">Login</NavLink>
+                <NavLink to="/logbook">Personal Logbook</NavLink>
               </PrimaryButton>
             </Flex>
           </Flex>

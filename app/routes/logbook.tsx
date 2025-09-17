@@ -1,4 +1,7 @@
-import type { Route } from './+types/home';
+import { authMiddleware } from '~/middleware/auth';
+import type { Route } from './+types/logbook';
+
+export const middleware: Route.MiddlewareFunction[] = [authMiddleware];
 
 export function meta({}: Route.MetaArgs) {
   return [

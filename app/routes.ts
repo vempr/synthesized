@@ -7,7 +7,8 @@ export default [
 
     layout('./layouts/wiki-layout.tsx', [route('wiki/back', 'routes/wiki.back.tsx'), route('wiki/front', 'routes/wiki.front.tsx')]),
 
-    route('lb', 'routes/logbook.tsx'),
+    route('logbook', 'routes/logbook.tsx'),
     route('login', 'routes/login.tsx'),
+    route('login-confirm', 'routes/login-confirm.ts'),
   ]),
 ] satisfies RouteConfig;
