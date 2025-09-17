@@ -9,6 +9,5 @@ export default [
 
     route('lb', 'routes/logbook.tsx'),
     route('login', 'routes/login.tsx'),
-    route('register', 'routes/register.tsx'),
   ]),
 ] satisfies RouteConfig;

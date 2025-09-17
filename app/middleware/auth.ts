@@ -1,13 +1,17 @@
-// import { redirect } from 'react-router';
-// import { userContext } from '~/context';
-// import type { MiddlewareFunction } from 'react-router';
+import { redirect } from 'react-router';
+import { userContext } from '~/context';
+import type { MiddlewareFunction } from 'react-router';
+import { createSupabaseServerClient } from '~/services/supabase.server';
 
-// export const authMiddleware: MiddlewareFunction<Response> = async ({ request, context }) => {
-//   const user = await getUserFromSession(request);
-//   if (!user) {
-//     throw redirect('/login');
-//   }
-//   context.set(userContext, user);
-// };
+export const authMiddleware: MiddlewareFunction<Response> = async ({ request, context }) => {
+  const { supabaseClient, headers } = createSupabaseServerClient(request, request.headers);
 
-// coming back to supabase after their dashboard doesn't have client side errors
+  const {
+    data: { user },
+  } = await supabaseClient.auth.getUser();
+
+  if (!user) {
+    throw redirect('/login', { headers });
+  }
+  context.set(userContext, user);
+};

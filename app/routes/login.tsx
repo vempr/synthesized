@@ -1,6 +1,4 @@
-import Link from '~/components/ui/link';
-
-import type { Route } from './+types/home';
+import type { Route } from './+types/login';
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -12,11 +10,8 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
+export function loader({ request }: Route.LoaderArgs) {}
+
 export default function Login() {
-  return (
-    <div>
-      'login form and all that'
-      <Link to="/register">Register</Link>
-    </div>
-  );
+  return <div>'email magic link and all that'</div>;
 }
