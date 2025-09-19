@@ -1,3 +1,527 @@
+import { createSupabaseServerClient } from '~/services/supabase.server';
+import type { Route } from './+types/logbook-session';
+import { userContext, type User } from '~/context';
+import { redirect, useFetcher, useLoaderData } from 'react-router';
+import { authMiddleware } from '~/middleware/auth';
+import { Box, Button, CloseButton, Dialog, Field, Flex, Heading, Input, Mark, Portal, Spinner, Stack, Table, Text, VStack } from '@chakra-ui/react';
+import Link from '~/components/ui/link';
+import { ArrowLeft, CirclePlus, SquarePen } from 'lucide-react';
+import PrimaryButton from '~/components/primary-button';
+import { Form } from 'react-router';
+import { useEffect, useState } from 'react';
+import { AutoComplete, AutoCompleteInput, AutoCompleteItem, AutoCompleteList } from '@choc-ui/chakra-autocomplete';
+import z from 'zod';
+import type { Database } from '~/types/database';
+import { toaster } from '~/components/ui/toaster';
+
+export const middleware: Route.MiddlewareFunction[] = [authMiddleware];
+
+export function meta({}: Route.MetaArgs) {
+  return [
+    { title: 'Synthesized | Your Personal Logbook' },
+    {
+      name: 'description',
+      content: 'A website to showcase the natural muscles of humans, their functions and how to train them. Includes tracking and training logs!',
+    },
+  ];
+}
+
+export async function loader({ request, params, context }: Route.LoaderArgs) {
+  const user = context.get(userContext) as User;
+  const { supabaseClient } = createSupabaseServerClient(request, request.headers);
+  const sessionId = params.sessionId;
+
+  const { data, error } = await supabaseClient
+    .from('training_sessions')
+    .select(
+      `
+    *,
+    training_session_exercises (
+      *,
+      exercises:exercises(*)
+    )
+  `,
+    )
+    .eq('id', sessionId)
+    .single();
+
+  const { data: exercisesData, error: exercisesError } = await supabaseClient.from('exercises').select().eq('user_id', user.id);
+
+  if (error || exercisesError) {
+    if (user) {
+      throw redirect('/logbook');
+    } else {
+      throw redirect('/');
+    }
+  }
+
+  return {
+    ...data,
+    exercisesData,
+  };
+}
+
+export async function action({ request, params, context }: Route.ActionArgs) {
+  const { supabaseClient } = createSupabaseServerClient(request, request.headers);
+
+  const { data } = await supabaseClient.from('training_sessions').select().eq('id', params.sessionId).single();
+
+  if (!data) {
+    return null;
+  }
+
+  const user = context.get(userContext) as User;
+  const form = await request.formData();
+
+  let numberOfExercises: string | number = String(form.get('numberOfExercises'));
+  numberOfExercises = parseInt(numberOfExercises);
+  if (numberOfExercises > 100) {
+    numberOfExercises = 100;
+  }
+
+  const exercises: {
+    name: string;
+    sets: number;
+    reps: number;
+    breakTime: number;
+  }[] = new Array();
+
+  for (let i = 0; i < numberOfExercises; i++) {
+    const name = String(form.get(`exercise-${i}-name`));
+    const sets = String(form.get(`exercise-${i}-sets`));
+    const reps = String(form.get(`exercise-${i}-reps`));
+    const breakTime = String(form.get(`exercise-${i}-break_time`));
+
+    if (name) {
+      try {
+        z.string().min(1).max(255).parse(name);
+        z.number().min(1).max(10000).nullable().parse(parseInt(sets));
+        z.number().min(1).max(10000).nullable().parse(parseInt(reps));
+        z.number().min(1).max(10000).nullable().parse(parseInt(breakTime));
+      } catch (err) {
+        console.log(err);
+        return { error: 'Invalid form inputs: Sets, repetitions and break times must have a minimum value of 1.' };
+      }
+
+      exercises.push({
+        name,
+        sets: parseInt(sets),
+        reps: parseInt(reps),
+        breakTime: parseInt(breakTime),
+      });
+    }
+  }
+
+  if (exercises.length === 0) {
+    return null;
+  }
+
+  const { data: insertedExercises, error: insertError } = await supabaseClient
+    .from('exercises')
+    .upsert(
+      exercises.map((ex) => ({
+        name: ex.name,
+        user_id: user.id,
+      })),
+      {
+        onConflict: 'name,user_id',
+      },
+    )
+    .select();
+
+  if (insertError) {
+    console.error('Error inserting exercises:', insertError);
+    throw insertError;
+  }
+
+  const exerciseMap = new Map<string, number>();
+  insertedExercises?.forEach((ex) => {
+    exerciseMap.set(ex.name, ex.id);
+  });
+
+  const trainingSessionInserts = exercises.map((ex) => ({
+    exercise_id: exerciseMap.get(ex.name)!,
+    training_session_id: params.sessionId,
+    user_id: user.id,
+    sets: ex.sets,
+    reps: ex.reps,
+    break_time: ex.breakTime,
+  }));
+
+  const { data: sessionData, error: sessionError } = await supabaseClient.from('training_session_exercises').insert(trainingSessionInserts).select();
+
+  if (sessionError) {
+    console.error('Error inserting training session exercises:', sessionError);
+    return { error: sessionError };
+  }
+
+  return { data: sessionData };
+
+  /**
+	 * FormData {
+			'exercise-0-name': 'Push ups',
+			'exercise-0-sets': '12',
+			'exercise-0-reps': '15',
+			'exercise-0-break_time': '100',
+			'exercise-1-name': 'exercises2',
+			'exercise-1-sets': '',
+			'exercise-1-reps': '123',
+			'exercise-1-break_time': '',
+			'exercise-2-name': '',
+			'exercise-2-sets': '',
+			'exercise-2-reps': '213',
+			'exercise-2-break_time': '',
+			'exercise-3-name': '',
+			'exercise-3-sets': '21421',
+			'exercise-3-reps': '',
+			'exercise-3-break_time': '',
+			numberOfExercises: '4'
+		}
+	*/
+}
+
 export default function LogbookSession() {
-  return 'logbook session!';
+  const data = useLoaderData<typeof loader>();
+  const [newExerciseDialogOpen, newExerciseDialogSetOpen] = useState(false);
+  const [editExerciseDialogOpen, editExerciseDialogSetOpen] = useState(false);
+  const [numberOfExerciseForms, setNumberOfExerciseForms] = useState(3);
+
+  const addExercisesFetcher = useFetcher<typeof action>();
+  const editExerciseFetcher = useFetcher();
+
+  useEffect(() => {
+    if (!addExercisesFetcher.data?.error) {
+      newExerciseDialogSetOpen(false);
+      toaster.create({
+        description: 'Exercises added successfully',
+        type: 'success',
+      });
+    }
+  }, [addExercisesFetcher.data]);
+
+  return (
+    <VStack gapY={3}>
+      <Box w="100%">
+        <Link to="/logbook">
+          <Flex
+            alignItems="center"
+            gapX={2}
+          >
+            <ArrowLeft />
+            <Heading
+              size="lg"
+              as="h1"
+            >
+              Logbook
+            </Heading>
+          </Flex>
+        </Link>
+      </Box>
+
+      <Flex
+        direction={{ base: 'column', md: 'row' }}
+        justifyContent="space-between"
+        alignItems="center"
+        w="100%"
+      >
+        <Heading
+          size="2xl"
+          as="h1"
+          marginBottom="3"
+        >
+          Training log: {new Date(data.date).toLocaleDateString('en-US')}
+        </Heading>
+        <Dialog.Root
+          size="full"
+          motionPreset="slide-in-bottom"
+          open={newExerciseDialogOpen}
+          onOpenChange={(e) => newExerciseDialogSetOpen(e.open)}
+        >
+          <Dialog.Trigger asChild>
+            <PrimaryButton>
+              <CirclePlus /> Add exercises to session
+            </PrimaryButton>
+          </Dialog.Trigger>
+          <Portal>
+            <Dialog.Backdrop />
+            <Dialog.Positioner>
+              <Dialog.Content
+                color="color"
+                bg="bg"
+              >
+                <Dialog.Header>
+                  <Dialog.Title>Add exercises</Dialog.Title>
+                </Dialog.Header>
+                <Dialog.Body>
+                  <addExercisesFetcher.Form method="post">
+                    {Array.from({ length: numberOfExerciseForms }).map((_, eid) => (
+                      <Stack
+                        marginBottom="4"
+                        key={`exercise-${eid}`}
+                      >
+                        <Heading
+                          size="2xl"
+                          as="h1"
+                          marginBottom="1"
+                          opacity="90%"
+                          textDecoration="underline"
+                        >
+                          Exercise {eid + 1}
+                          {eid === 0 && '*'}
+                        </Heading>
+
+                        <Stack direction={{ base: 'column', md: 'row' }}>
+                          <Field.Root required={eid === 0 ? true : false}>
+                            <Field.Label>Name</Field.Label>
+                            <AutoComplete
+                              openOnFocus
+                              freeSolo
+                            >
+                              <AutoCompleteInput
+                                name={`exercise-${eid}-name`}
+                                maxLength={255}
+                              />
+                              <AutoCompleteList color="color">
+                                {data.exercisesData.map((exercise) => (
+                                  <AutoCompleteItem
+                                    key={exercise.id}
+                                    value={exercise.name}
+                                    textTransform="capitalize"
+                                  >
+                                    {exercise.name}
+                                  </AutoCompleteItem>
+                                ))}
+                              </AutoCompleteList>
+                            </AutoComplete>
+                            <Field.HelperText>The name is needed if you want to fill out other fields.</Field.HelperText>
+                          </Field.Root>
+
+                          <Field.Root>
+                            <Field.Label>Sets</Field.Label>
+                            <Input
+                              name={`exercise-${eid}-sets`}
+                              autoComplete="disabled"
+                              type="number"
+                              max="10000"
+                            />
+                            <Field.HelperText>Total number of sets for exercise {eid + 1}.</Field.HelperText>
+                          </Field.Root>
+
+                          <Field.Root>
+                            <Field.Label>Repetitions</Field.Label>
+                            <Input
+                              name={`exercise-${eid}-reps`}
+                              autoComplete="disabled"
+                              type="number"
+                              max="10000"
+                            />
+                            <Field.HelperText>Number of reps for each set of exercise {eid + 1}.</Field.HelperText>
+                          </Field.Root>
+
+                          <Field.Root>
+                            <Field.Label>Average break time</Field.Label>
+                            <Input
+                              name={`exercise-${eid}-break_time`}
+                              autoComplete="disabled"
+                              type="number"
+                              max="10000"
+                            />
+                            <Field.HelperText>Time between sets of exercise {eid + 1} in seconds.</Field.HelperText>
+                          </Field.Root>
+                        </Stack>
+                      </Stack>
+                    ))}
+
+                    <input
+                      type="hidden"
+                      name="numberOfExercises"
+                      value={numberOfExerciseForms}
+                    />
+
+                    {numberOfExerciseForms < 100 && (
+                      <Button
+                        onClick={() => {
+                          setNumberOfExerciseForms(numberOfExerciseForms + 1);
+                        }}
+                      >
+                        <CirclePlus /> More exercises
+                      </Button>
+                    )}
+
+                    <Dialog.Footer marginTop="6">
+                      <Dialog.ActionTrigger asChild>
+                        <Button>Cancel</Button>
+                      </Dialog.ActionTrigger>
+
+                      <PrimaryButton
+                        type="submit"
+                        disabled={addExercisesFetcher.state !== 'idle'}
+                      >
+                        Create {addExercisesFetcher.state !== 'idle' && <Spinner />}
+                      </PrimaryButton>
+                    </Dialog.Footer>
+                  </addExercisesFetcher.Form>
+                </Dialog.Body>
+
+                <Dialog.CloseTrigger asChild>
+                  <CloseButton size="sm" />
+                </Dialog.CloseTrigger>
+              </Dialog.Content>
+            </Dialog.Positioner>
+          </Portal>
+        </Dialog.Root>
+      </Flex>
+
+      {data.training_session_exercises.length === 0 ? (
+        <Text>No exercises.</Text>
+      ) : (
+        <Table.Root
+          variant="outline"
+          maxWidth="1000px"
+        >
+          <Table.Header>
+            <Table.Row>
+              <Table.ColumnHeader color="color">Exercise</Table.ColumnHeader>
+              <Table.ColumnHeader color="color">Sets</Table.ColumnHeader>
+              <Table.ColumnHeader color="color">Reps</Table.ColumnHeader>
+              <Table.ColumnHeader
+                color="color"
+                textAlign="end"
+              >
+                Break time
+              </Table.ColumnHeader>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            {data.training_session_exercises.map((exercise) => (
+              <Table.Row
+                key={exercise.id}
+                borderColor="rgba(0,0,0,0)"
+              >
+                <Table.Cell>
+                  <Dialog.Root
+                    size="full"
+                    motionPreset="slide-in-bottom"
+                    open={editExerciseDialogOpen}
+                    onOpenChange={(e) => editExerciseDialogSetOpen(e.open)}
+                  >
+                    <Dialog.Trigger asChild>
+                      <Button
+                        padding="0"
+                        marginRight="2"
+                      >
+                        <SquarePen className="w-6 h-6" />
+                      </Button>
+                    </Dialog.Trigger>
+                    <Portal>
+                      <Dialog.Backdrop />
+                      <Dialog.Positioner>
+                        <Dialog.Content
+                          color="color"
+                          bg="bg"
+                        >
+                          <Dialog.Header>
+                            <Dialog.Title>Edit exercise</Dialog.Title>
+                          </Dialog.Header>
+                          <Dialog.Body>
+                            <Form method="patch">
+                              <Stack direction={{ base: 'column', md: 'row' }}>
+                                <Field.Root required>
+                                  <Field.Label>Name</Field.Label>
+                                  <AutoComplete
+                                    openOnFocus
+                                    freeSolo
+                                    defaultValue={exercise.exercises.name}
+                                  >
+                                    <AutoCompleteInput
+                                      name={`exercise-name`}
+                                      maxLength={255}
+                                    />
+                                    <AutoCompleteList color="color">
+                                      {data.exercisesData.map((exercise) => (
+                                        <AutoCompleteItem
+                                          key={exercise.id}
+                                          value={exercise.name}
+                                          textTransform="capitalize"
+                                        >
+                                          {exercise.name}
+                                        </AutoCompleteItem>
+                                      ))}
+                                    </AutoCompleteList>
+                                  </AutoComplete>
+                                  <Field.HelperText>The name is needed if you want to fill out other fields.</Field.HelperText>
+                                </Field.Root>
+
+                                <Field.Root>
+                                  <Field.Label>Sets</Field.Label>
+                                  <Input
+                                    name={`exercise-sets`}
+                                    autoComplete="disabled"
+                                    type="number"
+                                    max="10000"
+                                    defaultValue={exercise.sets ?? ''}
+                                  />
+                                  <Field.HelperText>Total number of sets for exercise.</Field.HelperText>
+                                </Field.Root>
+
+                                <Field.Root>
+                                  <Field.Label>Repetitions</Field.Label>
+                                  <Input
+                                    name={`exercise-reps`}
+                                    autoComplete="disabled"
+                                    type="number"
+                                    max="10000"
+                                    defaultValue={exercise.reps ?? ''}
+                                  />
+                                  <Field.HelperText>Number of reps for each set of exercise.</Field.HelperText>
+                                </Field.Root>
+
+                                <Field.Root>
+                                  <Field.Label>Average break time</Field.Label>
+                                  <Input
+                                    name={`exercise-break_time`}
+                                    autoComplete="disabled"
+                                    type="number"
+                                    max="10000"
+                                    defaultValue={exercise.break_time ?? ''}
+                                  />
+                                  <Field.HelperText>Time between sets of exercise in seconds.</Field.HelperText>
+                                </Field.Root>
+                              </Stack>
+
+                              <input
+                                type="hidden"
+                                name="numberOfExercises"
+                                value={numberOfExerciseForms}
+                              />
+
+                              <Dialog.Footer marginTop="6">
+                                <Dialog.ActionTrigger asChild>
+                                  <Button>Cancel</Button>
+                                </Dialog.ActionTrigger>
+
+                                <PrimaryButton type="submit">Save changes</PrimaryButton>
+                              </Dialog.Footer>
+                            </Form>
+                          </Dialog.Body>
+
+                          <Dialog.CloseTrigger asChild>
+                            <CloseButton size="sm" />
+                          </Dialog.CloseTrigger>
+                        </Dialog.Content>
+                      </Dialog.Positioner>
+                    </Portal>
+                  </Dialog.Root>
+                  {exercise.exercises.name}
+                </Table.Cell>
+                <Table.Cell>{exercise.sets ?? '-'}</Table.Cell>
+                <Table.Cell>{exercise.reps ?? '-'}</Table.Cell>
+                <Table.Cell textAlign="end">{exercise.break_time ? exercise.break_time + 's' : '-'}</Table.Cell>
+              </Table.Row>
+            ))}
+          </Table.Body>
+        </Table.Root>
+      )}
+    </VStack>
+  );
 }

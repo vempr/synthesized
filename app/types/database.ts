@@ -87,6 +87,13 @@ export type Database = {
             referencedRelation: 'exercises';
             referencedColumns: ['id'];
           },
+          {
+            foreignKeyName: 'training_session_exercises_training_session_id_fkey';
+            columns: ['training_session_id'];
+            isOneToOne: false;
+            referencedRelation: 'training_sessions';
+            referencedColumns: ['id'];
+          },
         ];
       };
       training_sessions: {

@@ -1,6 +1,6 @@
 import { authMiddleware } from '~/middleware/auth';
 import type { Route } from './+types/logbook';
-import { Button, Card, CloseButton, Dialog, Field, Heading, Input, Portal, VStack } from '@chakra-ui/react';
+import { Button, Card, CloseButton, Dialog, Field, Flex, Heading, Input, Portal, VStack } from '@chakra-ui/react';
 import PrimaryButton from '~/components/primary-button';
 import { useMemo, useState } from 'react';
 import { Form, redirect, useLoaderData } from 'react-router';
@@ -8,6 +8,7 @@ import { createSupabaseServerClient } from '~/services/supabase.server';
 import z from 'zod';
 import { userContext, type User } from '~/context';
 import { NavLink } from 'react-router';
+import { CirclePlus } from 'lucide-react';
 
 function formatDateForInput(date: Date) {
   const year = date.getFullYear();
@@ -94,7 +95,9 @@ export default function Logbook() {
         onOpenChange={(e) => newLogDialogSetOpen(e.open)}
       >
         <Dialog.Trigger asChild>
-          <PrimaryButton>Create new training log</PrimaryButton>
+          <PrimaryButton>
+            <CirclePlus /> Create new training log
+          </PrimaryButton>
         </Dialog.Trigger>
         <Portal>
           <Dialog.Backdrop />
@@ -143,13 +146,13 @@ export default function Logbook() {
       {loaderData.data?.map((session) => (
         <NavLink
           to={`/logbook/${session.id}`}
-          className="hover:shadow-xl"
+          className="hover:shadow-xl w-full md:w-fit"
           key={session.id}
         >
           <Card.Root
             size="sm"
-            w="60"
-            h="40"
+            w={{ base: '100%', md: '60' }}
+            h={{ base: '30', md: '40' }}
             borderColor="border"
             bg="muted"
             color="color"
