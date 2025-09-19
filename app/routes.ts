@@ -4,6 +4,7 @@ export default [
   layout('./layouts/app-layout.tsx', [
     index('routes/home.tsx'),
     route('wiki', 'routes/wiki.tsx'),
+    route('account', 'routes/account.tsx'),
 
     layout('./layouts/wiki-layout.tsx', [route('wiki/back', 'routes/wiki.back.tsx'), route('wiki/front', 'routes/wiki.front.tsx')]),
 

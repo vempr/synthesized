@@ -43,7 +43,7 @@ export default function AppLayout() {
             <Flex gap="7">
               <Link to="/">Home</Link>
               <Link to="/wiki">Composition Wiki</Link>
-              <Link to="/wiki">Your Account</Link>
+              <Link to="/account">Your Account</Link>
             </Flex>
 
             <Flex gap="2">

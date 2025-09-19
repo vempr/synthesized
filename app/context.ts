@@ -41,7 +41,7 @@ interface UserMetadata {
   [key: string]: any;
 }
 
-type User = {
+export type User = {
   id: string;
   app_metadata: UserAppMetadata;
   user_metadata: UserMetadata;

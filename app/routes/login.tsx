@@ -1,7 +1,7 @@
 import { createSupabaseServerClient } from '~/services/supabase.server';
 import type { Route } from './+types/login';
 import { useFetcher, redirect } from 'react-router';
-import { Center, Field, Heading, Input, Text } from '@chakra-ui/react';
+import { Center, Field, Heading, Input, Spinner, Text } from '@chakra-ui/react';
 import PrimaryButton from '~/components/primary-button';
 import z from 'zod';
 
@@ -23,7 +23,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   } = await supabaseClient.auth.getUser();
 
   if (user) {
-    throw redirect('/logbook', { headers });
+    throw redirect('/account', { headers });
   }
 }
 
@@ -51,7 +51,7 @@ export async function action({ request }: Route.ActionArgs) {
   });
 
   if (error) {
-    return { error: error.message };
+    return { error: 'email/supabase error: ' + error.message };
   } else {
     return { success: true };
   }
@@ -111,7 +111,7 @@ export default function Login() {
           type="submit"
           disabled={fetcher.state !== 'idle'}
         >
-          Send Link
+          Send Link {fetcher.state !== 'idle' && <Spinner />}
         </PrimaryButton>
       </fetcher.Form>
     </Center>

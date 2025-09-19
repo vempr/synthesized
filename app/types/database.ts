@@ -33,7 +33,87 @@ export type Database = {
   };
   public: {
     Tables: {
-      [_ in never]: never;
+      exercises: {
+        Row: {
+          id: number;
+          name: string;
+          user_id: string;
+        };
+        Insert: {
+          id?: number;
+          name: string;
+          user_id?: string;
+        };
+        Update: {
+          id?: number;
+          name?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      training_session_exercises: {
+        Row: {
+          break_time: number | null;
+          exercise_id: number;
+          id: number;
+          reps: number | null;
+          sets: number | null;
+          training_session_id: number;
+          user_id: string;
+        };
+        Insert: {
+          break_time?: number | null;
+          exercise_id: number;
+          id?: number;
+          reps?: number | null;
+          sets?: number | null;
+          training_session_id: number;
+          user_id: string;
+        };
+        Update: {
+          break_time?: number | null;
+          exercise_id?: number;
+          id?: number;
+          reps?: number | null;
+          sets?: number | null;
+          training_session_id?: number;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'training_session_exercises_exercise_id_fkey';
+            columns: ['exercise_id'];
+            isOneToOne: false;
+            referencedRelation: 'exercises';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'training_session_exercises_training_session_id_fkey';
+            columns: ['training_session_id'];
+            isOneToOne: false;
+            referencedRelation: 'training_sessions';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      training_sessions: {
+        Row: {
+          created_at: string;
+          id: number;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: number;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: number;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
