@@ -18,6 +18,8 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     type: 'email',
   });
 
+  console.log(error);
+
   if (error || !data.session || !data.user) {
     throw redirect('/login', { headers: new Headers() });
   }

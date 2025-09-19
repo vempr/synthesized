@@ -58,7 +58,7 @@ export type Database = {
           id: number;
           reps: number | null;
           sets: number | null;
-          training_session_id: number;
+          training_session_id: string;
           user_id: string;
         };
         Insert: {
@@ -67,7 +67,7 @@ export type Database = {
           id?: number;
           reps?: number | null;
           sets?: number | null;
-          training_session_id: number;
+          training_session_id: string;
           user_id: string;
         };
         Update: {
@@ -76,7 +76,7 @@ export type Database = {
           id?: number;
           reps?: number | null;
           sets?: number | null;
-          training_session_id?: number;
+          training_session_id?: string;
           user_id?: string;
         };
         Relationships: [
@@ -87,29 +87,22 @@ export type Database = {
             referencedRelation: 'exercises';
             referencedColumns: ['id'];
           },
-          {
-            foreignKeyName: 'training_session_exercises_training_session_id_fkey';
-            columns: ['training_session_id'];
-            isOneToOne: false;
-            referencedRelation: 'training_sessions';
-            referencedColumns: ['id'];
-          },
         ];
       };
       training_sessions: {
         Row: {
-          created_at: string;
-          id: number;
+          date: string;
+          id: string;
           user_id: string;
         };
         Insert: {
-          created_at?: string;
-          id?: number;
+          date: string;
+          id?: string;
           user_id: string;
         };
         Update: {
-          created_at?: string;
-          id?: number;
+          date?: string;
+          id?: string;
           user_id?: string;
         };
         Relationships: [];

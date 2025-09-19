@@ -51,7 +51,7 @@ export async function action({ request }: Route.ActionArgs) {
   });
 
   if (error) {
-    return { error: 'email/supabase error: ' + error.message };
+    return { error: 'network/gmail error: ' + error.message };
   } else {
     return { success: true };
   }
