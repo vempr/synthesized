@@ -5,14 +5,14 @@ import { redirect, useFetcher, useLoaderData } from 'react-router';
 import { authMiddleware } from '~/middleware/auth';
 import { Box, Button, CloseButton, Dialog, Field, Flex, Heading, Input, Mark, Portal, Spinner, Stack, Table, Text, VStack } from '@chakra-ui/react';
 import Link from '~/components/ui/link';
-import { ArrowLeft, CirclePlus, SquarePen } from 'lucide-react';
+import { ArrowLeft, CirclePlus, SquarePen, Trash } from 'lucide-react';
 import PrimaryButton from '~/components/primary-button';
-import { Form } from 'react-router';
 import { useEffect, useState } from 'react';
 import { AutoComplete, AutoCompleteInput, AutoCompleteItem, AutoCompleteList } from '@choc-ui/chakra-autocomplete';
 import z from 'zod';
-import type { Database } from '~/types/database';
 import { toaster } from '~/components/ui/toaster';
+import { type EditAction } from './logbook-session-edit';
+import type { DeleteAction } from './logbook-session-delete';
 
 export const middleware: Route.MiddlewareFunction[] = [authMiddleware];
 
@@ -155,7 +155,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     return { error: sessionError };
   }
 
-  return { data: sessionData };
+  return { data: sessionData, success: true };
 
   /**
 	 * FormData {
@@ -187,17 +187,59 @@ export default function LogbookSession() {
   const [numberOfExerciseForms, setNumberOfExerciseForms] = useState(3);
 
   const addExercisesFetcher = useFetcher<typeof action>();
-  const editExerciseFetcher = useFetcher();
+  const editExerciseFetcher = useFetcher<EditAction>();
+  const deleteExerciseFetcher = useFetcher<DeleteAction>();
 
   useEffect(() => {
-    if (!addExercisesFetcher.data?.error) {
+    if (addExercisesFetcher.data?.success) {
       newExerciseDialogSetOpen(false);
       toaster.create({
         description: 'Exercises added successfully',
         type: 'success',
       });
     }
+
+    if (addExercisesFetcher.data?.error) {
+      toaster.create({
+        description: addExercisesFetcher.data.error,
+        type: 'error',
+      });
+    }
   }, [addExercisesFetcher.data]);
+
+  useEffect(() => {
+    if (editExerciseFetcher.data?.success) {
+      editExerciseDialogSetOpen(false);
+      toaster.create({
+        description: 'Exercise edited successfully',
+        type: 'success',
+      });
+    }
+
+    if (editExerciseFetcher.data?.error) {
+      toaster.create({
+        description: editExerciseFetcher.data.error,
+        type: 'error',
+      });
+    }
+  }, [editExerciseFetcher.data]);
+
+  useEffect(() => {
+    if (deleteExerciseFetcher.data?.success) {
+      editExerciseDialogSetOpen(false);
+      toaster.create({
+        description: 'Exercise deleted successfully',
+        type: 'success',
+      });
+    }
+
+    if (deleteExerciseFetcher.data?.error) {
+      toaster.create({
+        description: deleteExerciseFetcher.data.error,
+        type: 'error',
+      });
+    }
+  }, [deleteExerciseFetcher.data]);
 
   return (
     <VStack gapY={3}>
@@ -421,10 +463,33 @@ export default function LogbookSession() {
                           bg="bg"
                         >
                           <Dialog.Header>
-                            <Dialog.Title>Edit exercise</Dialog.Title>
+                            <Dialog.Title>
+                              Edit exercise{' '}
+                              <deleteExerciseFetcher.Form
+                                method="post"
+                                action="/logbook/delete"
+                              >
+                                <input
+                                  type="hidden"
+                                  name="session-exercise-id"
+                                  value={exercise.id}
+                                />
+
+                                <PrimaryButton
+                                  marginTop="1"
+                                  disabled={deleteExerciseFetcher.state !== 'idle'}
+                                  type="submit"
+                                >
+                                  <Trash /> Delete exercise from session {deleteExerciseFetcher.state !== 'idle' && <Spinner />}
+                                </PrimaryButton>
+                              </deleteExerciseFetcher.Form>
+                            </Dialog.Title>
                           </Dialog.Header>
                           <Dialog.Body>
-                            <Form method="patch">
+                            <editExerciseFetcher.Form
+                              method="post"
+                              action="/logbook/edit"
+                            >
                               <Stack direction={{ base: 'column', md: 'row' }}>
                                 <Field.Root required>
                                   <Field.Label>Name</Field.Label>
@@ -491,8 +556,8 @@ export default function LogbookSession() {
 
                               <input
                                 type="hidden"
-                                name="numberOfExercises"
-                                value={numberOfExerciseForms}
+                                name="session-exercise-id"
+                                value={exercise.id}
                               />
 
                               <Dialog.Footer marginTop="6">
@@ -500,9 +565,14 @@ export default function LogbookSession() {
                                   <Button>Cancel</Button>
                                 </Dialog.ActionTrigger>
 
-                                <PrimaryButton type="submit">Save changes</PrimaryButton>
+                                <PrimaryButton
+                                  type="submit"
+                                  disabled={editExerciseFetcher.state !== 'idle'}
+                                >
+                                  Save changes {editExerciseFetcher.state !== 'idle' && <Spinner />}
+                                </PrimaryButton>
                               </Dialog.Footer>
-                            </Form>
+                            </editExerciseFetcher.Form>
                           </Dialog.Body>
 
                           <Dialog.CloseTrigger asChild>

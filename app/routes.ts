@@ -10,6 +10,8 @@ export default [
 
     route('logbook', 'routes/logbook.tsx'),
     route('logbook/:sessionId', 'routes/logbook-session.tsx'),
+    route('logbook/edit', 'routes/logbook-session-edit.ts'),
+    route('logbook/delete', 'routes/logbook-session-delete.ts'),
 
     route('login', 'routes/login.tsx'),
     route('login-confirm', 'routes/login-confirm.ts'),
