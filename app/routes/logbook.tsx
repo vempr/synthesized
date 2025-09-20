@@ -1,14 +1,16 @@
 import { authMiddleware } from '~/middleware/auth';
 import type { Route } from './+types/logbook';
-import { Button, Card, CloseButton, Dialog, Field, Flex, Heading, Input, List, Portal, Spinner, Text, VStack } from '@chakra-ui/react';
+import { Button, Card, CloseButton, Dialog, Em, Field, Flex, Heading, Input, List, Portal, Spinner, Tabs, Text, VStack } from '@chakra-ui/react';
 import PrimaryButton from '~/components/primary-button';
-import { useMemo, useState } from 'react';
-import { Form, redirect, useLoaderData } from 'react-router';
+import { useEffect, useMemo, useState } from 'react';
+import { Form, redirect, useActionData, useLoaderData, useNavigation } from 'react-router';
 import { createSupabaseServerClient } from '~/services/supabase.server';
 import z from 'zod';
 import { userContext, type User } from '~/context';
 import { NavLink } from 'react-router';
-import { CirclePlus } from 'lucide-react';
+import { ChartScatter, CirclePlus, Dumbbell } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { toaster } from '~/components/ui/toaster';
 
 function formatDateForInput(date: Date) {
   const year = date.getFullYear();
@@ -49,6 +51,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request, context }: Route.ActionArgs) {
+  console.log('hello');
   const user = context.get(userContext) as User;
   const body = await request.formData();
   let date = body.get('date');
@@ -81,9 +84,50 @@ export async function action({ request, context }: Route.ActionArgs) {
 
 export default function Logbook() {
   const loaderData = useLoaderData<typeof loader>();
+  const actionData = useActionData<typeof action>();
+  const navigation = useNavigation();
   const [newLogDialogOpen, newLogDialogSetOpen] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+
   const currentDate = useMemo(() => new Date(), []);
+  const sessions = useMemo(() => {
+    return loaderData.data?.slice().sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return dateB - dateA;
+    });
+  }, [loaderData.data]);
+  const exercisesForInsights = useMemo(() => {
+    if (!loaderData.data) return [];
+
+    const flat = loaderData.data.flatMap((session) =>
+      session.training_session_exercises.map((ex) => ({
+        name: ex.exercises.name,
+        date: session.date,
+        reps: ex.reps,
+        sets: ex.sets,
+        weight: ex.break_time,
+      })),
+    );
+
+    const grouped: Record<string, typeof flat> = {};
+    flat.forEach((item) => {
+      if (!grouped[item.name]) {
+        grouped[item.name] = [];
+      }
+      grouped[item.name].push(item);
+    });
+
+    return Object.entries(grouped).map(([exerciseName, entries]) => entries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
+  }, [loaderData.data]);
+
+  useEffect(() => {
+    if (actionData?.error) {
+      toaster.create({
+        description: actionData.error,
+        type: 'error',
+      });
+    }
+  }, [actionData]);
 
   return (
     <VStack
@@ -104,7 +148,7 @@ export default function Logbook() {
         onOpenChange={(e) => newLogDialogSetOpen(e.open)}
       >
         <Dialog.Trigger asChild>
-          <PrimaryButton>
+          <PrimaryButton type="button">
             <CirclePlus /> Create new training log
           </PrimaryButton>
         </Dialog.Trigger>
@@ -134,18 +178,13 @@ export default function Logbook() {
                     <Field.HelperText>The date of your training session.</Field.HelperText>
                   </Field.Root>
 
-                  <Dialog.Footer>
-                    <Dialog.ActionTrigger asChild>
-                      <Button>Cancel</Button>
-                    </Dialog.ActionTrigger>
-
-                    <PrimaryButton
-                      type="submit"
-                      onClick={() => setSubmitted(true)}
-                    >
-                      Create {submitted && <Spinner />}
-                    </PrimaryButton>
-                  </Dialog.Footer>
+                  <PrimaryButton
+                    type="submit"
+                    disabled={navigation.state !== 'idle'}
+                    marginTop="7"
+                  >
+                    Create {navigation.state !== 'idle' && <Spinner />}
+                  </PrimaryButton>
                 </Form>
               </Dialog.Body>
 
@@ -158,49 +197,181 @@ export default function Logbook() {
       </Dialog.Root>
 
       <Text opacity="80%">
-        Since the design choice (stupidly) did not include a 'weight' column, your logbook is not for tracking progress in weight, but rather volume
-        and break time fluctuations. Depending on your exercise and skill level, you might be aiming for e.g. more/same volume or less/same average
-        break times for that exercise.
+        Tip: If you perform bodyweight exercises, please put your actual body weight to see progress in strength from a relative and absolute
+        standpoint. Another tip: Graphs are not responsive. Sorry
       </Text>
 
-      <Flex
-        flexDirection={{ base: 'column', md: 'row' }}
-        gap="4"
+      <Tabs.Root
+        defaultValue="sessions"
+        variant="line"
       >
-        {loaderData.data?.map((session) => (
-          <NavLink
-            to={`/logbook/${session.id}`}
-            className="hover:shadow-xl w-full md:w-fit"
-            key={session.id}
+        <Tabs.List>
+          <Tabs.Trigger
+            _selected={{ color: 'color' }}
+            value="sessions"
+            color="border"
           >
-            <Card.Root
-              size="sm"
-              w={{ base: '100%', md: '60' }}
-              h={{ base: '30', md: '40' }}
-              borderColor="border"
-              bg="muted"
-              color="color"
-            >
-              <Card.Header>
-                <Heading size="md">{new Date(session.date).toLocaleDateString('en-US')}</Heading>
-              </Card.Header>
-              <Card.Body>
-                {session.training_session_exercises.length ? (
-                  <List.Root ml={4}>
-                    {session.training_session_exercises.map((exercise) => (
-                      <List.Item>
-                        {exercise.exercises.name} ({exercise.sets}S/{exercise.reps}R)
-                      </List.Item>
-                    ))}
-                  </List.Root>
-                ) : (
-                  <Text>No exercises</Text>
-                )}
-              </Card.Body>
-            </Card.Root>
-          </NavLink>
-        ))}
-      </Flex>
+            <Dumbbell />
+            Sessions
+          </Tabs.Trigger>
+          <Tabs.Trigger
+            _selected={{ color: 'color' }}
+            value="insights"
+            color="border"
+          >
+            <ChartScatter />
+            Insights
+          </Tabs.Trigger>
+        </Tabs.List>
+        <Tabs.Content value="sessions">
+          <Flex
+            flexDirection={{ base: 'column', md: 'row' }}
+            gap="4"
+            flexWrap="wrap"
+          >
+            {sessions?.map((session) => (
+              <NavLink
+                to={`/logbook/${session.id}`}
+                className="hover:shadow-xl w-full md:w-fit"
+                key={session.id}
+              >
+                <Card.Root
+                  size="sm"
+                  w={{ base: '100%', md: '60' }}
+                  h={{ base: '30', md: '200px' }}
+                  borderColor="border"
+                  bg="muted"
+                  color="color"
+                >
+                  <Card.Header>
+                    <Heading size="md">{new Date(session.date).toLocaleDateString('en-US')}</Heading>
+                  </Card.Header>
+                  <Card.Body>
+                    {session.training_session_exercises.length ? (
+                      <List.Root ml={4}>
+                        {session.training_session_exercises.slice(0, 3).map((exercise) => (
+                          <List.Item key={exercise.id}>
+                            {exercise.exercises.name} ({exercise.sets}S/{exercise.reps}R/{exercise.break_time})
+                          </List.Item>
+                        ))}
+                        {session.training_session_exercises.length > 3 && <Text>...</Text>}
+                      </List.Root>
+                    ) : (
+                      <Text>No exercises</Text>
+                    )}
+                  </Card.Body>
+                </Card.Root>
+              </NavLink>
+            ))}
+          </Flex>
+        </Tabs.Content>
+        <Tabs.Content value="insights">
+          <Flex
+            flexDirection="row"
+            gap="8"
+            flexWrap="wrap"
+          >
+            {exercisesForInsights.map((exerciseData, idx) => (
+              <VStack marginBottom="6">
+                <Heading as="h2">{exerciseData[0]?.name}</Heading>
+
+                <AreaChart
+                  key={idx}
+                  width={730}
+                  height={600}
+                  data={exerciseData}
+                  margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient
+                      id={`colorReps-${idx}`}
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor="#8884d8"
+                        stopOpacity={0.8}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="#8884d8"
+                        stopOpacity={0}
+                      />
+                    </linearGradient>
+                    <linearGradient
+                      id={`colorSets-${idx}`}
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor="#82ca9d"
+                        stopOpacity={0.8}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="#82ca9d"
+                        stopOpacity={0}
+                      />
+                    </linearGradient>
+                    <linearGradient
+                      id={`colorWeight-${idx}`}
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor="#ffc658"
+                        stopOpacity={0.8}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="#ffc658"
+                        stopOpacity={0}
+                      />
+                    </linearGradient>
+                  </defs>
+
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <Tooltip />
+                  <Legend />
+
+                  <Area
+                    type="monotone"
+                    dataKey="reps"
+                    stroke="#8884d8"
+                    fillOpacity={1}
+                    fill={`url(#colorReps-${idx})`}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="sets"
+                    stroke="#82ca9d"
+                    fillOpacity={1}
+                    fill={`url(#colorSets-${idx})`}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="weight"
+                    stroke="#ffc658"
+                    fillOpacity={0.4}
+                    fill={`url(#colorWeight-${idx})`}
+                  />
+                </AreaChart>
+              </VStack>
+            ))}
+          </Flex>
+        </Tabs.Content>
+      </Tabs.Root>
     </VStack>
   );
 }

@@ -73,6 +73,16 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const user = context.get(userContext) as User;
   const form = await request.formData();
 
+  if (form.get('delete_self')) {
+    const { error } = await supabaseClient.from('training_sessions').delete().eq('id', params.sessionId).single();
+
+    if (error) {
+      return null;
+    } else {
+      return redirect('/logbook');
+    }
+  }
+
   let numberOfExercises: string | number = String(form.get('numberOfExercises'));
   numberOfExercises = parseInt(numberOfExercises);
   if (numberOfExercises > 100) {
@@ -100,7 +110,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         z.number().min(1).max(10000).nullable().parse(parseInt(breakTime));
       } catch (err) {
         console.log(err);
-        return { error: 'Invalid form inputs: Sets, repetitions and break times must have a minimum value of 1.' };
+        return { error: 'Invalid form inputs: Sets, repetitions and weight must have a minimum value of 1.' };
       }
 
       exercises.push({
@@ -183,12 +193,13 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 export default function LogbookSession() {
   const data = useLoaderData<typeof loader>();
   const [newExerciseDialogOpen, newExerciseDialogSetOpen] = useState(false);
-  const [editExerciseDialogOpen, editExerciseDialogSetOpen] = useState(false);
+  const [openExerciseId, setOpenExerciseId] = useState<number | null>(null);
   const [numberOfExerciseForms, setNumberOfExerciseForms] = useState(3);
 
   const addExercisesFetcher = useFetcher<typeof action>();
   const editExerciseFetcher = useFetcher<EditAction>();
   const deleteExerciseFetcher = useFetcher<DeleteAction>();
+  const deleteSessionFetcher = useFetcher<typeof action>();
 
   useEffect(() => {
     if (addExercisesFetcher.data?.success) {
@@ -209,7 +220,7 @@ export default function LogbookSession() {
 
   useEffect(() => {
     if (editExerciseFetcher.data?.success) {
-      editExerciseDialogSetOpen(false);
+      setOpenExerciseId(null);
       toaster.create({
         description: 'Exercise edited successfully',
         type: 'success',
@@ -226,7 +237,7 @@ export default function LogbookSession() {
 
   useEffect(() => {
     if (deleteExerciseFetcher.data?.success) {
-      editExerciseDialogSetOpen(false);
+      setOpenExerciseId(null);
       toaster.create({
         description: 'Exercise deleted successfully',
         type: 'success',
@@ -266,13 +277,69 @@ export default function LogbookSession() {
         alignItems="center"
         w="100%"
       >
-        <Heading
-          size="2xl"
-          as="h1"
-          marginBottom="3"
+        <Flex
+          direction={{ base: 'column', md: 'row' }}
+          alignItems="center"
+          gap="4"
         >
-          Training log: {new Date(data.date).toLocaleDateString('en-US')}
-        </Heading>
+          <Heading
+            size="2xl"
+            as="h1"
+            marginTop="-3"
+          >
+            Training log: {new Date(data.date).toLocaleDateString('en-US')}
+          </Heading>
+
+          <Dialog.Root
+            size="full"
+            motionPreset="slide-in-bottom"
+          >
+            <Dialog.Trigger paddingBottom="3">
+              <Button>
+                <Trash /> Delete training session
+              </Button>
+            </Dialog.Trigger>
+            <Portal>
+              <Dialog.Backdrop />
+              <Dialog.Positioner>
+                <Dialog.Content
+                  color="color"
+                  bg="bg"
+                >
+                  <Dialog.Header>
+                    <Dialog.Title>Delete session permanently?</Dialog.Title>
+                  </Dialog.Header>
+                  <Dialog.Body>
+                    <p>This action cannot be undone. Your session and all associated exercises will be permanently erased.</p>
+                  </Dialog.Body>
+                  <Dialog.Footer>
+                    <Dialog.ActionTrigger asChild>
+                      <PrimaryButton>Cancel</PrimaryButton>
+                    </Dialog.ActionTrigger>
+                    <deleteSessionFetcher.Form method="post">
+                      <input
+                        type="hidden"
+                        name="delete_self"
+                        value="true"
+                      />
+
+                      <Button
+                        type="submit"
+                        disabled={deleteSessionFetcher.state !== 'idle'}
+                      >
+                        Delete session {deleteSessionFetcher.state !== 'idle' && <Spinner />}
+                      </Button>
+                    </deleteSessionFetcher.Form>
+                  </Dialog.Footer>
+                  <Dialog.CloseTrigger asChild>
+                    <CloseButton size="sm" />
+                  </Dialog.CloseTrigger>
+                </Dialog.Content>
+              </Dialog.Positioner>
+            </Portal>
+          </Dialog.Root>
+        </Flex>
+
         <Dialog.Root
           size="full"
           motionPreset="slide-in-bottom"
@@ -361,14 +428,14 @@ export default function LogbookSession() {
                           </Field.Root>
 
                           <Field.Root>
-                            <Field.Label>Average break time</Field.Label>
+                            <Field.Label>Weight</Field.Label>
                             <Input
                               name={`exercise-${eid}-break_time`}
                               autoComplete="disabled"
                               type="number"
                               max="10000"
                             />
-                            <Field.HelperText>Time between sets of exercise {eid + 1} in seconds.</Field.HelperText>
+                            <Field.HelperText>Weight for each repetition of exercise {eid + 1} in seconds.</Field.HelperText>
                           </Field.Root>
                         </Stack>
                       </Stack>
@@ -430,7 +497,7 @@ export default function LogbookSession() {
                 color="color"
                 textAlign="end"
               >
-                Break time
+                Weight
               </Table.ColumnHeader>
             </Table.Row>
           </Table.Header>
@@ -444,8 +511,8 @@ export default function LogbookSession() {
                   <Dialog.Root
                     size="full"
                     motionPreset="slide-in-bottom"
-                    open={editExerciseDialogOpen}
-                    onOpenChange={(e) => editExerciseDialogSetOpen(e.open)}
+                    open={openExerciseId === exercise.id}
+                    onOpenChange={(e) => setOpenExerciseId(e.open ? exercise.id : null)}
                   >
                     <Dialog.Trigger asChild>
                       <Button
@@ -542,7 +609,7 @@ export default function LogbookSession() {
                                 </Field.Root>
 
                                 <Field.Root>
-                                  <Field.Label>Average break time</Field.Label>
+                                  <Field.Label>Weight</Field.Label>
                                   <Input
                                     name={`exercise-break_time`}
                                     autoComplete="disabled"
@@ -550,7 +617,7 @@ export default function LogbookSession() {
                                     max="10000"
                                     defaultValue={exercise.break_time ?? ''}
                                   />
-                                  <Field.HelperText>Time between sets of exercise in seconds.</Field.HelperText>
+                                  <Field.HelperText>Weight for each repetition of exercise.</Field.HelperText>
                                 </Field.Root>
                               </Stack>
 
@@ -586,7 +653,7 @@ export default function LogbookSession() {
                 </Table.Cell>
                 <Table.Cell>{exercise.sets ?? '-'}</Table.Cell>
                 <Table.Cell>{exercise.reps ?? '-'}</Table.Cell>
-                <Table.Cell textAlign="end">{exercise.break_time ? exercise.break_time + 's' : '-'}</Table.Cell>
+                <Table.Cell textAlign="end">{exercise.break_time ?? '-'}</Table.Cell>
               </Table.Row>
             ))}
           </Table.Body>
