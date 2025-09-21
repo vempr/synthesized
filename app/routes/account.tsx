@@ -1,8 +1,8 @@
-import { authMiddleware } from '~/middleware/auth';
+// import { authMiddleware } from '~/middleware/auth';
 import type { Route } from './+types/account';
 import { createSupabaseServerClient } from '~/services/supabase.server';
 import { redirect, useLoaderData } from 'react-router';
-import { userContext, type User } from '~/context';
+// import { userContext, type User } from '~/context';
 import { Heading, List, Spinner, Text, VStack, Button, CloseButton, Dialog, Portal } from '@chakra-ui/react';
 import { useFetcher } from 'react-router';
 import PrimaryButton from '~/components/primary-button';
@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 import z from 'zod';
 import { toaster } from '~/components/ui/toaster';
 
-export const middleware: Route.MiddlewareFunction[] = [authMiddleware];
+// export const middleware: Route.MiddlewareFunction[] = [authMiddleware];
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -29,17 +29,24 @@ export async function loader({ request }: Route.LoaderArgs) {
     data: { user },
   } = await supabaseClient.auth.getUser();
 
-  let auth = user as User;
+  if (!user) {
+    throw redirect('/login', { headers: new Headers() });
+  }
 
   return {
-    email: auth.email,
-    created_at: auth.created_at,
-    last_sign_in_at: auth.last_sign_in_at as string,
+    email: user.email,
+    created_at: user.created_at,
+    last_sign_in_at: user.last_sign_in_at as string,
   };
 }
 
-export async function action({ request, context }: Route.ActionArgs) {
-  const user = context.get(userContext);
+export async function action({ request }: Route.ActionArgs) {
+  const { supabaseClient, headers } = createSupabaseServerClient(request, request.headers);
+
+  const {
+    data: { user },
+  } = await supabaseClient.auth.getUser();
+
   if (!user) {
     throw redirect('/login', { headers: new Headers() });
   }
@@ -55,8 +62,6 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   fetcher = fetcher as string;
-
-  const { supabaseClient, headers } = createSupabaseServerClient(request, request.headers);
 
   switch (fetcher) {
     case 'logoutFetcher':

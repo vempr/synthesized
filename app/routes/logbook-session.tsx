@@ -1,8 +1,8 @@
 import { createSupabaseServerClient } from '~/services/supabase.server';
 import type { Route } from './+types/logbook-session';
-import { userContext, type User } from '~/context';
+// import { userContext, type User } from '~/context';
 import { redirect, useFetcher, useLoaderData } from 'react-router';
-import { authMiddleware } from '~/middleware/auth';
+// import { authMiddleware } from '~/middleware/auth';
 import { Box, Button, CloseButton, Dialog, Field, Flex, Heading, Input, Mark, Portal, Spinner, Stack, Table, Text, VStack } from '@chakra-ui/react';
 import Link from '~/components/ui/link';
 import { ArrowLeft, CirclePlus, SquarePen, Trash } from 'lucide-react';
@@ -14,7 +14,7 @@ import { toaster } from '~/components/ui/toaster';
 import { type EditAction } from './logbook-session-edit';
 import type { DeleteAction } from './logbook-session-delete';
 
-export const middleware: Route.MiddlewareFunction[] = [authMiddleware];
+// export const middleware: Route.MiddlewareFunction[] = [authMiddleware];
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -26,9 +26,17 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-export async function loader({ request, params, context }: Route.LoaderArgs) {
-  const user = context.get(userContext) as User;
+export async function loader({ request, params }: Route.LoaderArgs) {
   const { supabaseClient } = createSupabaseServerClient(request, request.headers);
+
+  const {
+    data: { user },
+  } = await supabaseClient.auth.getUser();
+
+  if (!user) {
+    throw redirect('/login', { headers: new Headers() });
+  }
+
   const sessionId = params.sessionId;
 
   const { data, error } = await supabaseClient
@@ -64,13 +72,20 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
 export async function action({ request, params, context }: Route.ActionArgs) {
   const { supabaseClient } = createSupabaseServerClient(request, request.headers);
 
+  const {
+    data: { user },
+  } = await supabaseClient.auth.getUser();
+
+  if (!user) {
+    throw redirect('/login', { headers: new Headers() });
+  }
+
   const { data } = await supabaseClient.from('training_sessions').select().eq('id', params.sessionId).single();
 
   if (!data) {
     return null;
   }
 
-  const user = context.get(userContext) as User;
   const form = await request.formData();
 
   if (form.get('delete_self')) {

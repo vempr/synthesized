@@ -1,4 +1,4 @@
-import { authMiddleware } from '~/middleware/auth';
+// import { authMiddleware } from '~/middleware/auth';
 import type { Route } from './+types/logbook';
 import { Box, Button, Card, CloseButton, Dialog, Em, Field, Flex, Heading, Input, List, Portal, Spinner, Tabs, Text, VStack } from '@chakra-ui/react';
 import PrimaryButton from '~/components/primary-button';
@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Form, redirect, useActionData, useLoaderData, useNavigation } from 'react-router';
 import { createSupabaseServerClient } from '~/services/supabase.server';
 import z from 'zod';
-import { userContext, type User } from '~/context';
+// import { userContext, type User } from '~/context';
 import { NavLink } from 'react-router';
 import { ChartScatter, CirclePlus, Dumbbell } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
@@ -19,7 +19,7 @@ function formatDateForInput(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
-export const middleware: Route.MiddlewareFunction[] = [authMiddleware];
+// export const middleware: Route.MiddlewareFunction[] = [authMiddleware];
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -33,6 +33,14 @@ export function meta({}: Route.MetaArgs) {
 
 export async function loader({ request }: Route.LoaderArgs) {
   const { supabaseClient } = createSupabaseServerClient(request, request.headers);
+
+  const {
+    data: { user },
+  } = await supabaseClient.auth.getUser();
+
+  if (!user) {
+    throw redirect('/login', { headers: new Headers() });
+  }
 
   const { data, error } = await supabaseClient.from('training_sessions').select(
     `
@@ -51,8 +59,16 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request, context }: Route.ActionArgs) {
-  console.log('hello');
-  const user = context.get(userContext) as User;
+  const { supabaseClient } = createSupabaseServerClient(request, request.headers);
+
+  const {
+    data: { user },
+  } = await supabaseClient.auth.getUser();
+
+  if (!user) {
+    throw redirect('/login', { headers: new Headers() });
+  }
+
   const body = await request.formData();
   let date = body.get('date');
 
@@ -64,8 +80,6 @@ export async function action({ request, context }: Route.ActionArgs) {
   }
 
   date = date as string;
-
-  const { supabaseClient } = createSupabaseServerClient(request, request.headers);
 
   const { data, error } = await supabaseClient
     .from('training_sessions')

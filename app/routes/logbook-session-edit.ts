@@ -1,13 +1,23 @@
-import { authMiddleware } from '~/middleware/auth';
+// import { authMiddleware } from '~/middleware/auth';
 import type { Route } from './+types/logbook-session-edit';
 import { createSupabaseServerClient } from '~/services/supabase.server';
-import { userContext, type User } from '~/context';
+// import { userContext, type User } from '~/context';
 import z from 'zod';
+import { redirect } from 'react-router';
 
-export const middleware: Route.MiddlewareFunction[] = [authMiddleware];
+// export const middleware: Route.MiddlewareFunction[] = [authMiddleware];
 
 export async function action({ request, context }: Route.ActionArgs) {
   const { supabaseClient } = createSupabaseServerClient(request, request.headers);
+
+  const {
+    data: { user },
+  } = await supabaseClient.auth.getUser();
+
+  if (!user) {
+    throw redirect('/login', { headers: new Headers() });
+  }
+
   const form = await request.formData();
 
   const id = parseInt(String(form.get(`session-exercise-id`)));
@@ -40,7 +50,6 @@ export async function action({ request, context }: Route.ActionArgs) {
     // protect training_session_exercise owner from attackers knowing id
   }
 
-  const user = context.get(userContext) as User;
   const { data: exercise, error: upsertError } = await supabaseClient
     .from('exercises')
     .upsert(

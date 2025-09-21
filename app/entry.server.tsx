@@ -9,14 +9,11 @@ import { renderToPipeableStream } from 'react-dom/server';
 
 export const streamTimeout = 5_000;
 
-export const getLoadContext = () => new RouterContextProvider();
-
 export default function handleRequest(
   request: Request,
   responseStatusCode: number,
   responseHeaders: Headers,
   routerContext: EntryContext,
-  loadContext: RouterContextProvider,
   // If you have middleware enabled:
   // loadContext: RouterContextProvider
 ) {

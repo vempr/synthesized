@@ -1,9 +1,8 @@
 import { createSupabaseServerClient } from '~/services/supabase.server';
 import type { Route } from './+types/login-confirm';
-import { userContext } from '~/context';
 import { redirect } from 'react-router';
 
-export async function loader({ request, context }: Route.LoaderArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
   const requestUrl = new URL(request.url);
   const token_hash = requestUrl.searchParams.get('token_hash');
 
@@ -22,12 +21,6 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     console.error('OTP verification error:', error);
     throw redirect('/login', { headers: new Headers() });
   }
-
-  context.set(userContext, data.user);
-  console.log(
-    'Cookies being set:',
-    Array.from(headers.entries()).filter(([key]) => key === 'Set-Cookie'),
-  );
 
   return redirect('/logbook', { headers });
 }
