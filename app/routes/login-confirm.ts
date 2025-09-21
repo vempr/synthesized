@@ -8,7 +8,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const token_hash = requestUrl.searchParams.get('token_hash');
 
   if (!token_hash) {
-    throw redirect('/login', { headers: new Headers() });
+    throw redirect('/login');
   }
 
   const { supabaseClient, headers } = createSupabaseServerClient(request, request.headers);
@@ -18,12 +18,16 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     type: 'email',
   });
 
-  console.log(error);
-
   if (error || !data.session || !data.user) {
+    console.error('OTP verification error:', error);
     throw redirect('/login', { headers: new Headers() });
   }
 
   context.set(userContext, data.user);
+  console.log(
+    'Cookies being set:',
+    Array.from(headers.entries()).filter(([key]) => key === 'Set-Cookie'),
+  );
+
   return redirect('/logbook', { headers });
 }

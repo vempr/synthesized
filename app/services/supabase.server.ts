@@ -12,7 +12,16 @@ export const createSupabaseServerClient = (request: Request, headers: Headers) =
         }));
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => headers.append('Set-Cookie', serializeCookieHeader(name, value, options)));
+        cookiesToSet.forEach(({ name, value, options }) => {
+          const cookieOptions = {
+            ...options,
+            path: '/',
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax' as const,
+          };
+          headers.append('Set-Cookie', serializeCookieHeader(name, value, cookieOptions));
+        });
       },
     },
   });

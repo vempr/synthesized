@@ -1,7 +1,7 @@
 import { createSupabaseServerClient } from '~/services/supabase.server';
 import type { Route } from './+types/login';
 import { useFetcher, redirect } from 'react-router';
-import { Center, Field, Heading, Input, Spinner, Text } from '@chakra-ui/react';
+import { Center, Em, Field, Heading, Input, Spinner, Text } from '@chakra-ui/react';
 import PrimaryButton from '~/components/primary-button';
 import z from 'zod';
 
@@ -51,7 +51,7 @@ export async function action({ request }: Route.ActionArgs) {
   });
 
   if (error) {
-    return { error: 'network/gmail error: ' + error.message };
+    return { error: 'supabase/gmail error: ' + error.message + ' (Please try again later.)' };
   } else {
     return { success: true };
   }
@@ -73,6 +73,13 @@ export default function Login() {
         >
           Login
         </Heading>
+
+        <Text
+          marginBottom="5"
+          fontSize="10px"
+        >
+          If you just signed up and clicked on the magic link, please reload to be logged in. <Em opacity="30%">(f supabase)</Em>
+        </Text>
 
         <Field.Root required>
           <Field.Label>

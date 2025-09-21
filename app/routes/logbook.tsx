@@ -1,6 +1,6 @@
 import { authMiddleware } from '~/middleware/auth';
 import type { Route } from './+types/logbook';
-import { Button, Card, CloseButton, Dialog, Em, Field, Flex, Heading, Input, List, Portal, Spinner, Tabs, Text, VStack } from '@chakra-ui/react';
+import { Box, Button, Card, CloseButton, Dialog, Em, Field, Flex, Heading, Input, List, Portal, Spinner, Tabs, Text, VStack } from '@chakra-ui/react';
 import PrimaryButton from '~/components/primary-button';
 import { useEffect, useMemo, useState } from 'react';
 import { Form, redirect, useActionData, useLoaderData, useNavigation } from 'react-router';
@@ -9,7 +9,7 @@ import z from 'zod';
 import { userContext, type User } from '~/context';
 import { NavLink } from 'react-router';
 import { ChartScatter, CirclePlus, Dumbbell } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { toaster } from '~/components/ui/toaster';
 
 function formatDateForInput(date: Date) {
@@ -343,7 +343,6 @@ export default function Logbook() {
                   <YAxis />
                   <CartesianGrid strokeDasharray="3 3" />
                   <Tooltip />
-                  <Legend />
 
                   <Area
                     type="monotone"
