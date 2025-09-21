@@ -34,11 +34,13 @@ export default function AppLayout() {
         display="none"
         md={{ display: 'block' }}
       >
-        <nav className="py-4 px-7">
+        <nav>
           <Flex
             gap="4"
             align="center"
             justify="space-between"
+            paddingY="16px"
+            paddingX="28px"
           >
             <Flex gap="7">
               <Link to="/">Home</Link>
@@ -114,8 +116,10 @@ export default function AppLayout() {
 
       <Hr />
 
-      <main className="p-7">
-        <Outlet />
+      <main>
+        <Box padding="28px">
+          <Outlet />
+        </Box>
       </main>
     </div>
   );
