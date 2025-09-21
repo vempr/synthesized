@@ -1,4 +1,5 @@
-import { createContext } from 'react-router';
+import { createContext, RouterContextProvider } from 'react-router';
+import { createSupabaseServerClient } from './services/supabase.server';
 
 interface UserIdentity {
   id: string;
@@ -70,3 +71,22 @@ export type User = {
 };
 
 export const userContext = createContext<User | null>(null);
+
+async function getUser(request: Request): Promise<User | null> {
+  const { supabaseClient } = createSupabaseServerClient(request, request.headers);
+
+  const {
+    data: { user },
+  } = await supabaseClient.auth.getUser();
+
+  return user;
+}
+
+export async function setupUserContext(request: Request, routerContext: RouterContextProvider): Promise<void> {
+  const user = await getUser(request);
+  routerContext.set(userContext, user);
+}
+
+export function getUserFromContext(routerContext: RouterContextProvider): User | null {
+  return routerContext.get(userContext);
+}

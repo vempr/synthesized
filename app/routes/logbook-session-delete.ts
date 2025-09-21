@@ -1,11 +1,10 @@
 import { authMiddleware } from '~/middleware/auth';
 import type { Route } from './+types/logbook-session-delete';
 import { createSupabaseServerClient } from '~/services/supabase.server';
-import { userContext, type User } from '~/context';
 
 export const middleware: Route.MiddlewareFunction[] = [authMiddleware];
 
-export async function action({ request, context }: Route.ActionArgs) {
+export async function action({ request }: Route.ActionArgs) {
   const { supabaseClient } = createSupabaseServerClient(request, request.headers);
   const form = await request.formData();
 
