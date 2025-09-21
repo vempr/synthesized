@@ -4,7 +4,13 @@ is a comprehensive web platform dedicated to human muscle anatomy education and 
 
 Visit the wiki section to learn about human muscle anatomy and proper training techniques. Use the logbook to track your training sessions, record exercises, and monitor your progress over time. The platform provides insights into each exercise, helping you optimize your training routine for better results.
 
+Use [synthesized](https://synthz.netlify.app/) in the web, or view a demo video on [YouTube](https://youtu.be/cMKvdTfP5rM).
+
 ## Gallery
+
+![](https://github.com/vempr/synthesized/blob/5819145838ae0444a83e4df7cee026ba34cb46f7/public/week-3.jpg)
+
+![](https://github.com/vempr/synthesized/blob/5819145838ae0444a83e4df7cee026ba34cb46f7/public/week-3-2.jpg)
 
 ## Key Features
 
