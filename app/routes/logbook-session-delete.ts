@@ -1,4 +1,4 @@
-import { authMiddleware } from '~/middleware/auth';
+// import { authMiddleware } from '~/middleware/auth';
 import type { Route } from './+types/logbook-session-delete';
 import { createSupabaseServerClient } from '~/services/supabase.server';
 import { redirect } from 'react-router';

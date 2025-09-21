@@ -3,7 +3,7 @@ import type { Route } from './+types/logbook-session';
 // import { userContext, type User } from '~/context';
 import { redirect, useFetcher, useLoaderData } from 'react-router';
 // import { authMiddleware } from '~/middleware/auth';
-import { Box, Button, CloseButton, Dialog, Field, Flex, Heading, Input, Mark, Portal, Spinner, Stack, Table, Text, VStack } from '@chakra-ui/react';
+import { Box, Button, CloseButton, Dialog, Field, Flex, Heading, Input, Portal, Spinner, Stack, Table, Text, VStack } from '@chakra-ui/react';
 import Link from '~/components/ui/link';
 import { ArrowLeft, CirclePlus, SquarePen, Trash } from 'lucide-react';
 import PrimaryButton from '~/components/primary-button';
