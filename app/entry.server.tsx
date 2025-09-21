@@ -9,6 +9,8 @@ import { renderToPipeableStream } from 'react-dom/server';
 
 export const streamTimeout = 5_000;
 
+export const getLoadContext = () => new RouterContextProvider();
+
 export default function handleRequest(
   request: Request,
   responseStatusCode: number,
@@ -21,6 +23,8 @@ export default function handleRequest(
   return new Promise(async (resolve, reject) => {
     let shellRendered = false;
     let userAgent = request.headers.get('user-agent');
+
+    loadContext = getLoadContext();
 
     // Ensure requests from bots and SPA Mode renders wait for all content to load before responding
     // https://react.dev/reference/react-dom/server/renderToPipeableStream#waiting-for-all-content-to-load-for-crawlers-and-static-generation
