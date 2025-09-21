@@ -1,87 +1,40 @@
-# Welcome to React Router!
+# synthesized
 
-A modern, production-ready template for building full-stack React applications using React Router.
+is a comprehensive web platform dedicated to human muscle anatomy education and fitness tracking! This application provides detailed information about the human muscular system while offering practical tools for tracking training progress.
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+Visit the wiki section to learn about human muscle anatomy and proper training techniques. Use the logbook to track your training sessions, record exercises, and monitor your progress over time. The platform provides insights into each exercise, helping you optimize your training routine for better results.
 
-## Features
+## Gallery
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+## Key Features
 
-## Getting Started
+### Muscle Composition Wiki
 
-### Installation
+- Detailed anatomical information about significant muscle groups
+- Visual guides showcasing muscle locations and functions
+- Training recommendations for each muscle group
+- Educational content about how muscles keep our bodies functioning
 
-Install the dependencies:
+### Training Logbook
+
+- Comprehensive session tracking with exercise details
+- Historical data visualization
+- Personal training insights and statistics
+
+## Running locally
+
+1. Install the dependencies:
 
 ```bash
 npm install
 ```
 
-### Development
+2. Create a new Supabase database with the provided `app/types/database.ts` file.
 
-Start the development server with HMR:
+3. Start the development server with HMR:
 
 ```bash
 npm run dev
 ```
 
 Your application will be available at `http://localhost:5173`.
-
-## Building for Production
-
-Create a production build:
-
-```bash
-npm run build
-```
-
-## Deployment
-
-### Docker Deployment
-
-To build and run using Docker:
-
-```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
-```
-
-The containerized application can be deployed to any platform that supports Docker, including:
-
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
-
-### DIY Deployment
-
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
-
-```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
-```
-
-## Styling
-
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
-
----
-
-Built with ❤️ using React Router.

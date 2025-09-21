@@ -78,7 +78,8 @@ export default function Login() {
           marginBottom="5"
           fontSize="10px"
         >
-          If you just signed up and clicked on the magic link, please enter your email to get the login link. <Em opacity="30%">(f supabase)</Em>
+          If you just signed up and clicked on the magic link, please enter your email to get the login link. <Em opacity="30%">(f supabase)</Em>{' '}
+          [Please check your Spam folder too.]
         </Text>
 
         <Field.Root required>
