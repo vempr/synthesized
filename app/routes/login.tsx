@@ -76,9 +76,8 @@ export default function Login() {
 
         <Text
           marginBottom="5"
-          fontSize="10px"
+          fontSize="12px"
         >
-          If you just signed up and clicked on the magic link, please enter your email to get the login link. <Em opacity="30%">(f supabase)</Em>{' '}
           [Please check your Spam folder too.]
         </Text>
 
