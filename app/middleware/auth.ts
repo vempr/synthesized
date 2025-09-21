@@ -3,7 +3,7 @@ import { userContext } from '~/context';
 import type { MiddlewareFunction } from 'react-router';
 import { createSupabaseServerClient } from '~/services/supabase.server';
 
-export const authMiddleware: MiddlewareFunction<Response> = async ({ request, context }) => {
+export const authMiddleware: MiddlewareFunction<Response> = async ({ request, context }, next) => {
   console.log('=== AUTH MIDDLEWARE START ===');
 
   const { supabaseClient, headers } = createSupabaseServerClient(request, request.headers);
@@ -29,4 +29,7 @@ export const authMiddleware: MiddlewareFunction<Response> = async ({ request, co
   context.set(userContext, user);
   console.log('User set in context:', user.email);
   console.log('=== AUTH MIDDLEWARE END ===');
+
+  const res = await next();
+  return res;
 };

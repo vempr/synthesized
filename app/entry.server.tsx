@@ -1,12 +1,11 @@
 import { PassThrough } from 'node:stream';
 
-import type { RouterContextProvider, EntryContext } from 'react-router';
+import { RouterContextProvider, type EntryContext } from 'react-router';
 import { createReadableStreamFromReadable } from '@react-router/node';
 import { ServerRouter } from 'react-router';
 import { isbot } from 'isbot';
 import type { RenderToPipeableStreamOptions } from 'react-dom/server';
 import { renderToPipeableStream } from 'react-dom/server';
-import { setupUserContext } from './context';
 
 export const streamTimeout = 5_000;
 
@@ -22,8 +21,6 @@ export default function handleRequest(
   return new Promise(async (resolve, reject) => {
     let shellRendered = false;
     let userAgent = request.headers.get('user-agent');
-
-    await setupUserContext(request, loadContext);
 
     // Ensure requests from bots and SPA Mode renders wait for all content to load before responding
     // https://react.dev/reference/react-dom/server/renderToPipeableStream#waiting-for-all-content-to-load-for-crawlers-and-static-generation
